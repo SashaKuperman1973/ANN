@@ -43,7 +43,7 @@ namespace BackPropagationNetwork
 
         private readonly IDebugLogger infoLogger;
 
-        private int? randomSeed;
+        private readonly int? randomSeed;
 
         public NeuralNetwork(IDebugLogger infoLogger, int? randomSeed = null)
         {
@@ -58,14 +58,14 @@ namespace BackPropagationNetwork
         }
 
         public void Train(Data data,
-            int maxEprochs, double learnRate, double momentum, int numberOfHiddenLayerNeurons)
+            int maxEprochs, double learnRate, double momentum, int numberOfHiddenLayerNeurons = -1)
         {
             this.numberOfInputs = data.NumberOfElementsPerSet;
             this.numberOfOutputLayerNeurons = data.NumberOfDiscreteTargetValues;
 
-            if (this.numberOfHiddenLayerNeurons < this.numberOfInputs)
+            if (numberOfHiddenLayerNeurons < this.numberOfInputs || numberOfHiddenLayerNeurons < this.numberOfOutputLayerNeurons)
             {
-                this.numberOfHiddenLayerNeurons = this.numberOfInputs + 3;  // Magic number
+                this.numberOfHiddenLayerNeurons = Math.Max(this.numberOfInputs, this.numberOfOutputLayerNeurons) + 3;  // Magic number
             }
             else
             {
@@ -262,6 +262,8 @@ namespace BackPropagationNetwork
                 }
                 ++epoch;
             }
+
+            this.infoLogger.Log($"Epoch {epoch}");
         }
 
         private void UpdateWeights(double[] tValues, double learnRate, double momentum)
