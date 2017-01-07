@@ -130,6 +130,44 @@ namespace BackPropagationNetwork
             NeuralNetwork.SetArray(this.outputLayerBiases, input, ref j);
         }
 
+        public double GetAccuracy(double[][] testData, int[][] testTargets)
+        {
+            // percentage correct using winner-takes all
+            int numCorrect = 0;
+            int numWrong = 0;
+            double[] xValues = new double[this.numberOfInputs]; // inputs
+            int[] tValues = new int[this.numberOfOutputLayerNeurons]; // targets
+            int[] outputs = new int[this.numberOfOutputLayerNeurons];
+
+            for (int i = 0; i < testData.Length; ++i)
+            {
+                Array.Copy(testData[i], xValues, this.numberOfInputs); // parse test data into x-values and t-values
+                Array.Copy(testTargets[i], tValues, this.numberOfOutputLayerNeurons);
+
+                double[] yValues = this.ComputeOutputs(xValues); // computed Y
+                for (int j=0; j < yValues.Length; j++)
+                {
+                    outputs[j] = (int) Math.Round(yValues[j]);
+                }
+
+                bool isCorrect = true;
+                for (int j = 0; j < yValues.Length; j++)
+                {
+                    if (outputs[j] != tValues[j])
+                    {
+                        isCorrect = false;
+                        break;
+                    }
+                }
+
+                if (isCorrect)
+                    ++numCorrect;
+                else
+                    ++numWrong;
+            }
+            return (numCorrect * 1.0) / (numCorrect + numWrong); // ugly 2 - check for divide by zero
+        }
+
         private static void AddArray(double[][] input, List<double> list)
         {
             input.ToList()
@@ -187,30 +225,6 @@ namespace BackPropagationNetwork
                 for (int i = 0; i < dataMatrix.Length; ++i)
                     dataMatrix[i][col] = (dataMatrix[i][col] - mean) / sd;
             }
-        }
-
-        public double GetAccuracy(double[][] testData, int[][] testTargets)
-        {
-            // percentage correct using winner-takes all
-            int numCorrect = 0;
-            int numWrong = 0;
-            double[] xValues = new double[this.numberOfInputs]; // inputs
-            int[] tValues = new int[this.numberOfOutputLayerNeurons]; // targets
-
-            for (int i = 0; i < testData.Length; ++i)
-            {
-                Array.Copy(testData[i], xValues, this.numberOfInputs); // parse test data into x-values and t-values
-                Array.Copy(testTargets[i], tValues, this.numberOfOutputLayerNeurons);
-
-                double[] yValues = this.ComputeOutputs(xValues); // computed Y
-                int maxIndex = NeuralNetwork.MaxIndex(yValues); // which cell in yValues has largest value?
-
-                if (tValues[maxIndex] == 1)
-                    ++numCorrect;
-                else
-                    ++numWrong;
-            }
-            return (numCorrect * 1.0) / (numCorrect + numWrong); // ugly 2 - check for divide by zero
         }
 
         private static int MaxIndex(double[] vector) // helper for Accuracy()
@@ -368,8 +382,8 @@ namespace BackPropagationNetwork
             for (int i = 0; i < this.numberOfOutputLayerNeurons; ++i)  // add biases to input-to-hidden sums
                 outputSums[i] += this.outputLayerBiases[i];
 
-            double[] softOut = NeuralNetwork.Softmax(outputSums); // softmax activation does all outputs at once for efficiency
-            Array.Copy(softOut, this.outputs, softOut.Length);
+            for (int i = 0; i < this.numberOfOutputLayerNeurons; ++i) // Single output node.
+                this.outputs[i] = NeuralNetwork.LogSigmoid(outputSums[i]);
 
             double[] retResult = new double[this.numberOfOutputLayerNeurons]; // could define a GetOutputs method instead
             Array.Copy(this.outputs, retResult, retResult.Length);
@@ -400,6 +414,16 @@ namespace BackPropagationNetwork
                 result[i] = Math.Exp(outputSums[i] - max) / scale;
 
             return result; // now scaled so that xi sum to 1.0
+        }
+
+        public static double LogSigmoid(double x)
+        {
+            if (x < -45.0)
+                return 0.0;
+            else if (x > 45.0)
+                return 1.0;
+            else
+                return 1.0 / (1.0 + Math.Exp(-x));
         }
 
         #endregion ComputeOutputs

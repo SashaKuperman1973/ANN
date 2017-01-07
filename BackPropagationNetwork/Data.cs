@@ -23,6 +23,8 @@ namespace BackPropagationNetwork
         private readonly ConcurrentDictionary<int[], int> targetDecodingDictionary =
             new ConcurrentDictionary<int[], int>(new IntArrayEqualityComparer());
 
+        private readonly int bitLength;
+
         public Data(ulong numberOfElementSets, int numberOfElementsPerSet, int numberOfDiscreteTargetValues)
         {
             this.Elements = new double[numberOfElementSets][];
@@ -30,6 +32,8 @@ namespace BackPropagationNetwork
 
             this.NumberOfElementsPerSet = numberOfElementsPerSet;
             this.NumberOfDiscreteTargetValues = numberOfDiscreteTargetValues;
+
+            this.bitLength = (int)Math.Ceiling(Math.Log(this.NumberOfDiscreteTargetValues, 2));
         }
 
         public int DecodeTarget(int[] input)
@@ -88,11 +92,26 @@ namespace BackPropagationNetwork
 
             this.Targets[this.dataArrayPointer] = this.targetEncodingDictionary.GetOrAdd(target, t =>
             {
+                if (this.currentTargetIndex >= this.NumberOfDiscreteTargetValues)
+                {
+                    throw new DataException("Overflow");
+                }                
+
                 var targetResult = new int[this.NumberOfDiscreteTargetValues];
-                targetResult[this.currentTargetIndex++] = 1;
+                int mask = 1;
+                for (int i = 0; i <= this.bitLength; i++)
+                {
+                    if ((this.currentTargetIndex & mask) > 0)
+                    {
+                        targetResult[i] = 1;
+                    }
+
+                    mask <<= 1;
+                }
 
                 this.targetDecodingDictionary.TryAdd(targetResult, t);
 
+                this.currentTargetIndex++;
                 return targetResult;
             });
 
