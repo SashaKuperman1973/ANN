@@ -397,7 +397,7 @@ namespace BackPropagationNetwork
             else return Math.Tanh(x);
         }
 
-        private static double[] Softmax(double[] outputSums) // does all output nodes at once so scale doesn't have to be re-computed each time
+        private static double[] Sigmoid(double[] outputSums) // does all output nodes at once so scale doesn't have to be re-computed each time
         {
             // determine max output sum
             double max = outputSums[0];
